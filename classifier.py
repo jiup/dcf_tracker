@@ -69,8 +69,7 @@ def train(trainloader, net, optimizer, criterion, epoch=6):
     for epoch in range(epoch):
         running_loss = 0.0
         for i, data in enumerate(trainloader, 0):
-            inputs, labels = data
-            inputs, labels = inputs.to(device), labels.to(device)
+            inputs, labels = data[0].to(device), data[1].to(device)
             optimizer.zero_grad()
             outputs = net(inputs)
             loss = criterion(outputs, labels)

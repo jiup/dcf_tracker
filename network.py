@@ -20,7 +20,8 @@ class DCFNet(nn.Module):
     def __init__(self, config=None):
         super(DCFNet, self).__init__()
         self.feature = DCFNetFeature()
-        # wf: the fourier transformation of correlation kernel w. You will need to calculate the best wf in update method.
+        # wf: the fourier transformation of correlation kernel w.
+        # You will need to calculate the best wf in update method.
         self.wf = None
         # xf: the fourier transformation of target patch x.
         self.xf = None
@@ -35,11 +36,15 @@ class DCFNet(nn.Module):
         """
         # obtain feature of z and add hanning window
         z = self.feature(z) * self.config.cos_window
-        # TODO: You are required to calculate response using self.wf to do cross correlation on the searching patch z
-        # put your code here
-
-
-
+        zf = torch.rfft(z, signal_ndim=2)
+        real = zf[..., 0] * self.xf[..., 0] + zf[..., 1] * self.xf[..., 1]
+        imag = zf[..., 1] * self.xf[..., 0] - zf[..., 0] * self.xf[..., 1]
+        out = torch.stack((real, imag), -1)
+        kxzf = torch.sum(out, dim=1, keepdim=True)
+        real = kxzf[..., 0] * self.wf[..., 0] - kxzf[..., 1] * self.wf[..., 1]
+        imag = kxzf[..., 0] * self.wf[..., 1] + kxzf[..., 1] * self.wf[..., 0]
+        out = torch.stack((real, imag), -1)
+        response = torch.irfft(out, signal_ndim=2)
         return response
 
     def update(self, x, lr=1.0):
@@ -61,11 +66,18 @@ class DCFNet(nn.Module):
         """
         # x: feature of patch x with hanning window. Shape (1, 32, crop_sz, crop_sz)
         x = self.feature(x) * self.config.cos_window
-        # TODO: calculate self.xf and self.wf
-        # put your code here
 
+        x = x * self.config.cos_window
+        xf = torch.rfft(x, signal_ndim=2)
 
-
+        kxxf = torch.sum(torch.sum(xf ** 2, dim=4, keepdim=True), dim=1, keepdim=True)
+        alphaf = self.config.yf / (kxxf + self.config.lambda0)
+        if lr > 0.99:
+            self.wf = alphaf
+            self.xf = xf
+        else:
+            self.xf = (1 - lr) * self.xf.data + lr * xf.data
+            self.wf = (1 - lr) * self.wf.data + lr * alphaf.data
 
     def load_param(self, path='param.pth'):
         checkpoint = torch.load(path)
@@ -82,4 +94,3 @@ class DCFNet(nn.Module):
                 self.load_state_dict(state_dict)
         else:
             self.feature.load_state_dict(checkpoint)
-
