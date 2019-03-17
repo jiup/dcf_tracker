@@ -129,7 +129,7 @@ if __name__ == '__main__':
     optimizer = optim.SGD(net.parameters(), lr=0.001, momentum=0.9)
 
     # train
-    train(train_loader, net, optimizer, criterion, epoch=6)
+    train(train_loader, net, optimizer, criterion, epoch=8)
 
     # save model, do not modify it.
     savepath = 'classifier_param.pth'
