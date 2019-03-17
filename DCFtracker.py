@@ -20,7 +20,7 @@ parser.add_argument('--model', metavar='PATH', default='param.pth')
 parser.add_argument('--visualization', action='store_true', help='visualize the tracked bbox')
 args = parser.parse_args()
 
-# by default, we ship the data to GPU 0. you can sepcify it later
+# by default, we ship the data to GPU 0. you can specify it later
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 
@@ -55,7 +55,7 @@ def preprocess_patch(im, target_pos, target_sz, config):
     preprocess patch for the input of network
     :param im: input image (h, w, 3)
     :param target_pos: center coordinate of the target box, tuple (cx, cy)
-    :param target_sz: width and hight of the target box, tuple (w, h)
+    :param target_sz: width and height of the target box, tuple (w, h)
     :param config: TrackConfig
     :return: patch: (3, config.crop_sz, config.crop_sz)
     """
@@ -91,8 +91,8 @@ except:
     new = list(pre_trained_model.items())
     net_kvpair = net.state_dict()
     count = 0
-    for key,value in net_kvpair.items():
-        layer_name, weights=new[count]
+    for key, value in net_kvpair.items():
+        layer_name, weights = new[count]
         net_kvpair[key] = weights
         count += 1
     net.load_state_dict(net_kvpair)
@@ -158,7 +158,6 @@ for video_id, video in enumerate(videos):  # run without resetting
         # model update
         patch = preprocess_patch(im, target_pos, target_sz, config)
         net.update(torch.Tensor(np.expand_dims(patch, axis=0)).to(device), lr=config.interp_factor)
-
 
         res.append(cxy_wh_2_rect1(target_pos, target_sz))  # 1-index
 
